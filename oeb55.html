@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feedback for OEB 55- Ecology: Populations, Communities, and Ecosystems</title>
+    <title>Feedback for OEB 55 (Ecology: Populations, Communities, and Ecosystems) - Paul Moorcroft and Benton Taylor </title>
     <style>
         body {
             font-family: "Arial", sans-serif;
@@ -133,10 +133,12 @@
     <div class="top-left">
         <a href="index.html">&larr; Back to Homepage</a>
     </div>
-    <h1>Feedback for OEC 55 </h1>
+    <h1>Feedback for OEB 55</h1>
     <div class="navigation">
         <a href="#response-rate">Course Response Rate</a> |
         <a href="#feedback">Course Feedback</a> |
+        <a href="#hoursPerWeek">Hours Per Week</a> |
+        <a href="#recommendCourse">Recommend Course</a> |
         <a href="#comments">Comments from Students</a>
     </div>
 
@@ -144,7 +146,7 @@
     <div class="statistics">
         <p><strong>Responded:</strong> 6</p>
         <p><strong>Invited:</strong> 6</p>
-        <p><strong>Response Ratio:</strong> 82%</p>
+        <p><strong>Response Ratio:</strong> 100%</p>
     </div>
 
     <h2 id="feedback">Course Feedback</h2>
@@ -160,38 +162,169 @@
         </tr>
         <tr>
             <td>Evaluate the course overall</td>
-            <td>65%</td>
-            <td>26%</td>
-            <td>5%</td>
-            <td>2%</td>
-            <td>2%</td>
-            <td>4.51</td>
+            <td>33.3%</td>
+            <td>33.3%</td>
+            <td>33.3%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>4.8</td>
         </tr>
         <tr>
-            <td>Course materials</td>
-            <td>57%</td>
-            <td>29%</td>
-            <td>12%</td>
-            <td>1%</td>
-            <td>1%</td>
-            <td>4.41</td>
+            <td>Course materials (readings, audio-visual materials, textbooks, lab manuals, website, etc.)</td>
+            <td>50%</td>
+            <td>16.6%</td>
+            <td>33.4%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>4.6</td>
+        </tr>
+         <tr>
+            <td>Assignments (exams, essays, problem sets, language homework, etc.)</td>
+            <td>50%</td>
+            <td>16.6%</td>
+            <td>33.4%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>4.6</td>
+        </tr>
+         <tr>
+            <td>Feedback you received on work you produced in this course</td>
+            <td>66.6%</td>
+            <td>16.6%</td>
+            <td>16.6%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>4.9</td>
         </tr>
     </table>
+
+    <h2 id="hoursPerWeek">On average, how many hours per week did you spend on coursework outside of class? Enter a whole number between 0 and 168.</h2>
+    <table>
+        <tr>
+            <th>0-2</th>
+            <th>3-5</th>
+            <th>6-8</th>
+            <th>9-11</th>
+            <th>12-14</th>
+            <th>15-17</th>
+            <th>18-20</th>
+        </tr>
+        <tr>
+            <td>33.3%</td>
+            <td>33.3%</td>
+            <td>33.3%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>0%</td>
+            <td>0%</td>
+        </tr>
+    </table>
+
+    <h2 id="recommendCourse">How strongly would you recommend this course to your peers?</h2>
+<div>
+    <canvas id="recommendationChart" width="100" height="50"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Data for the chart
+    const data = {
+        labels: [
+            "Recommend with Enthusiasm",
+            "Likely to Recommend",
+            "Recommend with Reservations",
+            "Unlikely to Recommend",
+            "Definitely not Recommend"
+        ],
+        datasets: [{
+            label: 'Number of Responses',
+            data: [7, 3, 1, 1, 0], // Data points corresponding to response counts
+            backgroundColor: [
+                '#375a7f', // Dark blue
+                '#3c763d', // Dark green
+                '#8a6d3b', // Brown
+                '#a94442', // Dark red
+                '#7f7f7f'  // Dark gray
+            ],
+            borderColor: [
+                '#2a4661', // Border for dark blue
+                '#2d5b2c', // Border for dark green
+                '#6c522b', // Border for brown
+                '#823634', // Border for dark red
+                '#656565'  // Border for dark gray
+            ],
+            borderWidth: 1
+        }]
+    };
+
+    // Options for the chart
+    const options = {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: 'Course Recommendation Distribution'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Number of Responses'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Recommendation Options'
+                }
+            }
+        }
+    };
+
+    // Create the chart
+    const ctx = document.getElementById('recommendationChart').getContext('2d');
+    const recommendationChart = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: options
+    });
+</script>
+    
 
     <h2 id="comments">Comments from Students</h2>
     <div class="comments">
         <div class="comment">
-            <p>" comment"</p>
+            <p>"" </p>
         </div>
         <div class="comment">
-            <p>"comment "</p>
+            <p>""
+                - Laozi (Daodejing)</p>
         </div>
         <div class="comment">
-            <p>"Another commentary"</p>
+            <p>"." - Inward Training (Neiye)</p>
         </div>
         <div class="comment">
-            <p>"Another philosopher"</p>
+            <p>"" - Zhuangzi</p>
         </div>
+
+        <div class="comment">
+            <p>"" - Confucius (Kongzi)
+
+            </p>
+
+        </div>
+        <div class="comment">
+            <p> "" - 
+
+            </p>
+        </div>
+
+
     </div>
 
     <div class="back-to-top">
