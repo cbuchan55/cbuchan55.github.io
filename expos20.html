@@ -222,7 +222,7 @@
 
     <h2 id="recommendCourse">How strongly would you recommend this course to your peers?</h2>
 <div>
-    <canvas id="recommendationChart" width="600" height="400"></canvas>
+    <canvas id="recommendationChart" width="300" height="200"></canvas>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -240,18 +240,18 @@
             label: 'Number of Responses',
             data: [7, 3, 1, 1, 0], // Data points corresponding to response counts
             backgroundColor: [
-                'rgba(54, 162, 235, 0.7)', // Enthusiasm
-                'rgba(75, 192, 192, 0.7)', // Likely
-                'rgba(255, 206, 86, 0.7)', // Reservations
-                'rgba(255, 99, 132, 0.7)', // Unlikely
-                'rgba(201, 203, 207, 0.7)' // Definitely not
+                '#375a7f', // Dark blue
+                '#3c763d', // Dark green
+                '#8a6d3b', // Brown
+                '#a94442', // Dark red
+                '#7f7f7f'  // Dark gray
             ],
             borderColor: [
-                'rgba(54, 162, 235, 1)',
-                'rgba(75, 192, 192, 1)',
-                'rgba(255, 206, 86, 1)',
-                'rgba(255, 99, 132, 1)',
-                'rgba(201, 203, 207, 1)'
+                '#2a4661', // Border for dark blue
+                '#2d5b2c', // Border for dark green
+                '#6c522b', // Border for brown
+                '#823634', // Border for dark red
+                '#656565'  // Border for dark gray
             ],
             borderWidth: 1
         }]
