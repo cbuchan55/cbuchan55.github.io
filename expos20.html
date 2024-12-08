@@ -138,6 +138,7 @@
         <a href="#response-rate">Course Response Rate</a> |
         <a href="#feedback">Course Feedback</a> |
         <a href="#hoursPerWeek">Hours Per Week</a> |
+        <a href="#recommendCourse">Recommend Course</a> |
         <a href="#comments">Comments from Students</a>
     </div>
 
@@ -219,6 +220,81 @@
         </tr>
     </table>
 
+    <h2 id="recommendCourse">How strongly would you recommend this course to your peers?</h2>
+<div>
+    <canvas id="recommendationChart" width="600" height="400"></canvas>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Data for the chart
+    const data = {
+        labels: [
+            "Recommend with Enthusiasm",
+            "Likely to Recommend",
+            "Recommend with Reservations",
+            "Unlikely to Recommend",
+            "Definitely not Recommend"
+        ],
+        datasets: [{
+            label: 'Number of Responses',
+            data: [7, 3, 1, 1, 0], // Data points corresponding to response counts
+            backgroundColor: [
+                'rgba(54, 162, 235, 0.7)', // Enthusiasm
+                'rgba(75, 192, 192, 0.7)', // Likely
+                'rgba(255, 206, 86, 0.7)', // Reservations
+                'rgba(255, 99, 132, 0.7)', // Unlikely
+                'rgba(201, 203, 207, 0.7)' // Definitely not
+            ],
+            borderColor: [
+                'rgba(54, 162, 235, 1)',
+                'rgba(75, 192, 192, 1)',
+                'rgba(255, 206, 86, 1)',
+                'rgba(255, 99, 132, 1)',
+                'rgba(201, 203, 207, 1)'
+            ],
+            borderWidth: 1
+        }]
+    };
+
+    // Options for the chart
+    const options = {
+        responsive: true,
+        plugins: {
+            legend: {
+                display: false
+            },
+            title: {
+                display: true,
+                text: 'Course Recommendation Distribution'
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                title: {
+                    display: true,
+                    text: 'Number of Responses'
+                }
+            },
+            x: {
+                title: {
+                    display: true,
+                    text: 'Recommendation Options'
+                }
+            }
+        }
+    };
+
+    // Create the chart
+    const ctx = document.getElementById('recommendationChart').getContext('2d');
+    const recommendationChart = new Chart(ctx, {
+        type: 'bar',
+        data: data,
+        options: options
+    });
+</script>
+    
 
     <h2 id="comments">Comments from Students</h2>
     <div class="comments">
