@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Loud vs Danceable Explorer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+/* Layout: speaker grid (sketch 18) is the hero on the left; flower (sketch 3) and radar (sketch 7) stack on the right. Speaker click and petal click are two-way linked */
+:root{
+  --bg:#f3f5f6; --panel:#ffffff; --ink:#18202a; --muted:#64707c; --rule:#d9dfe4;
+  --cab:#e9edf0; --cone:#2d7fa3; --cone2:#9cc9dc; --hot:#ea7a3b; --hot2:#e5679a;
+  --avg:#d9534a;
+  --e1:#4a2a5e; --e2:#73336f; --e3:#a03c7c; --e4:#c94a85; --e5:#e46d97;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12171c; --panel:#1b2229; --ink:#e8edf1; --muted:#9aa6b1; --rule:#2e3842;
+  --cab:#242d36; --cone:#4fa3c7; --cone2:#2c5a6e; --hot:#f2924f; --hot2:#ef86b0; --avg:#f07a70;
+  --e1:#8a62a6; --e2:#a65ea2; --e3:#c868a1; --e4:#e27aa6; --e5:#f39cba; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12171c; --panel:#1b2229; --ink:#e8edf1; --muted:#9aa6b1; --rule:#2e3842;
+  --cab:#242d36; --cone:#4fa3c7; --cone2:#2c5a6e; --hot:#f2924f; --hot2:#ef86b0; --avg:#f07a70;
+  --e1:#8a62a6; --e2:#a65ea2; --e3:#c868a1; --e4:#e27aa6; --e5:#f39cba; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:22px 40px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,38px);line-height:1.05;margin:0;text-wrap:balance}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:10px 20px;margin-bottom:14px}
+.q{max-width:66ch;color:var(--muted);margin:6px 0 0}
+.reset{font:500 13px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:999px;padding:6px 12px;cursor:pointer}
+button:focus-visible{outline:2px solid var(--hot);outline-offset:2px}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:14px 14px 10px;min-width:0}
+.panel h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0}
+.sub{font-size:12.5px;color:var(--muted);margin:2px 0 8px}
+.tag{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.05em}
+.grid{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.right{display:flex;flex-direction:column;gap:16px;min-width:0}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--ink);font-family:var(--body)}
+.spk{cursor:pointer}
+.spk .cab{fill:var(--cab);stroke:var(--rule);stroke-width:1.5}
+.spk.on .cab{stroke:var(--ink);stroke-width:2.5}
+.spk.empty{opacity:.4;cursor:default}
+.spk .t{font-family:var(--display);font-weight:500;font-size:15px}
+.spk .m{font-family:var(--mono);font-size:11px;fill:var(--muted)}
+.spk .big{font-family:var(--display);font-weight:700;font-size:22px}
+.petal{cursor:pointer;transition:opacity .2s}
+.plabel{font-family:var(--mono);font-size:10.5px;pointer-events:none}
+.status{font-family:var(--mono);font-size:11.5px;color:var(--muted);min-height:1.4em}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:16px;height:3px;margin-right:5px;vertical-align:3px}
+.how{margin-top:16px;font-size:12.5px;color:var(--muted);max-width:92ch}
+.how b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">CS 1710 · Prototype B · Sketches 18 + 3 + 7</div>
+  <div class="top">
+    <div>
+      <h1>Loud vs Danceable Explorer</h1>
+      <p class="q">Do songs with high energy and low danceability do well? Pick an energy level on the flower to see whether the answer changes as songs get louder.</p>
+    </div>
+    <button class="reset" id="reset" type="button">Show all energy levels</button>
+  </div>
+
+  <div class="grid">
+    <section class="panel">
+      <h2>Energy × danceability <span class="tag">SKETCH 18</span></h2>
+      <p class="sub">Each speaker is a group of songs. Inner cone area = average popularity (0 to 100). Click a speaker to profile it.</p>
+      <div id="speakers"></div>
+      <div class="status" id="spkstatus"></div>
+    </section>
+    <div class="right">
+      <section class="panel">
+        <h2>Energy levels <span class="tag">SKETCH 3</span></h2>
+        <p class="sub">Each petal is an energy level; petal length = average danceability. Click a petal to filter the speakers to that level.</p>
+        <div id="flower"></div>
+        <div class="status" id="fstat"></div>
+      </section>
+      <section class="panel">
+        <h2>Sound profile <span class="tag">SKETCH 7</span></h2>
+        <p class="sub" id="radarsub"></p>
+        <div id="radar"></div>
+        <div class="legend">
+          <span><i style="background:var(--avg)"></i>all songs in view</span>
+          <span><i style="background:var(--cone)"></i>selected speaker (orange when it is the loud, not danceable group)</span>
+        </div>
+      </section>
+    </div>
+  </div>
+  <p class="how"><b>How the views connect.</b> Clicking a petal filters every speaker and the radar to songs at that energy level; click it again, or "Show all energy levels", to clear. Clicking a speaker selects that group: the radar compares it with all songs in view, and the flower dims the petals that contain none of its songs, with a line on each petal showing the selected group's own danceability there. Songs are de-duplicated by track ID (89,741 tracks). Speaker splits are at 0.5. A "hit" is popularity of 50 or more. Energy levels: very low &lt; 0.2, low 0.2 to 0.4, mid 0.4 to 0.6, high 0.6 to 0.8, very high ≥ 0.8.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const D={"cols": ["eb", "q", "n", "pop", "hit", "danceability", "energy", "valence", "acousticness", "instrumentalness", "speechiness", "liveness", "loud_n", "tempo_n", "dur_n"], "rows": [[0.0, 0.0, 4897.0, 134454.0, 1101.0, 1467.657, 469.817, 853.293, 4378.012, 2759.774, 222.423, 763.675, 1446.14, 1733.661, 2054.953], [0.0, 1.0, 1836.0, 59531.0, 417.0, 1149.02, 234.679, 677.214, 1599.401, 697.299, 141.705, 259.143, 781.14, 756.672, 590.276], [1.0, 0.0, 4815.0, 138296.0, 893.0, 1714.865, 1440.04, 1297.657, 3529.825, 1082.958, 213.322, 940.187, 2762.318, 2059.211, 2210.979], [1.0, 1.0, 6336.0, 213176.0, 1598.0, 4136.687, 2011.203, 2885.363, 4100.241, 1130.312, 505.987, 1045.793, 3819.428, 2708.534, 2408.108], [2.0, 0.0, 2520.0, 86388.0, 619.0, 957.676, 1136.049, 809.96, 1316.805, 360.105, 130.28, 559.524, 1690.558, 1184.825, 1267.78], [2.0, 1.0, 5905.0, 211618.0, 1618.0, 3959.158, 2674.57, 2940.7, 2680.2, 766.791, 548.432, 1011.01, 3996.626, 2621.355, 2503.937], [2.0, 2.0, 2339.0, 81647.0, 542.0, 921.703, 1286.793, 810.198, 913.251, 306.484, 137.53, 564.697, 1665.356, 1166.89, 1242.38], [2.0, 3.0, 7759.0, 272017.0, 2076.0, 5263.731, 4279.909, 4122.357, 2626.339, 868.495, 725.411, 1407.647, 5575.476, 3510.976, 3471.682], [3.0, 2.0, 4786.0, 173801.0, 1218.0, 1899.014, 3357.13, 1892.703, 1081.279, 579.095, 359.596, 1279.917, 3646.051, 2562.143, 2529.848], [3.0, 3.0, 19101.0, 667895.0, 5109.0, 12981.18, 13440.605, 11107.335, 4315.926, 2010.859, 1838.017, 3947.183, 14680.273, 9026.907, 8776.518], [4.0, 2.0, 10980.0, 340168.0, 1999.0, 4075.267, 10142.647, 3985.783, 648.824, 2256.949, 1229.332, 3196.847, 9015.417, 6304.92, 5040.487], [4.0, 3.0, 18467.0, 600270.0, 4019.0, 11923.352, 16463.444, 10748.808, 2270.88, 2743.18, 1795.1, 4495.438, 15320.382, 9515.542, 8826.537]], "attrs": ["danceability", "energy", "valence", "acousticness", "instrumentalness", "speechiness", "liveness", "loud_n", "tempo_n", "dur_n"]};
+const ix=Object.fromEntries(D.cols.map((c,i)=>[c,i])), ATTR=D.attrs;
+const LBL={danceability:"dance",energy:"energy",valence:"valence",acousticness:"acoustic",instrumentalness:"instrumental",speechiness:"speech",liveness:"live",loud_n:"loudness",tempo_n:"tempo",dur_n:"duration"};
+const Q=[{q:1,name:"Quiet, danceable",col:0,row:0},{q:3,name:"Loud, danceable",col:1,row:0},
+  {q:0,name:"Quiet, not danceable",col:0,row:1},{q:2,name:"Loud, not danceable",col:1,row:1,hot:true}];
+const LV=["very low","low","mid","high","very high"], COL=["--e1","--e2","--e3","--e4","--e5"];
+let lvl=null, sel=2;
+function agg(f){const o={n:0,pop:0,hit:0};ATTR.forEach(a=>o[a]=0);for(const r of D.rows){if(!f(r))continue;o.n+=r[ix.n];o.pop+=r[ix.pop];o.hit+=r[ix.hit];ATTR.forEach(a=>o[a]+=r[ix[a]])}return o}
+const inLvl=r=>lvl===null||r[ix.eb]===lvl;
+
+/* speakers */
+const SW=560,SH=470,cellW=250,cellH=200,ox=50,oy=10;
+const ss=d3.select("#speakers").append("svg").attr("viewBox",`0 0 ${SW} ${SH}`);
+ss.append("text").attr("x",ox+cellW).attr("y",SH-8).attr("text-anchor","middle").style("font-size","11px").style("fill","var(--muted)").text("energy: quiet (< 0.5) → loud (≥ 0.5)");
+ss.append("text").attr("transform",`translate(14,${oy+cellH}) rotate(-90)`).attr("text-anchor","middle").style("font-size","11px").style("fill","var(--muted)").text("danceability: low ↓  high ↑");
+const area=d3.scaleSqrt([0,100],[0,78]);
+const spk=ss.selectAll("g.spk").data(Q).join("g").attr("class","spk").attr("tabindex",0)
+  .attr("transform",d=>`translate(${ox+d.col*(cellW+10)},${oy+d.row*(cellH+14)})`)
+  .on("click",(e,d)=>{if(!d3.select(e.currentTarget).classed("empty")){sel=d.q;update()}})
+  .on("keydown",(e,d)=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();sel=d.q;update()}});
+spk.append("rect").attr("class","cab").attr("width",cellW).attr("height",cellH).attr("rx",14);
+spk.append("circle").attr("cx",cellW*.36).attr("cy",cellH*.53).attr("r",area(100)).style("fill","none").style("stroke","var(--rule)").style("stroke-dasharray","3 3");
+spk.append("circle").attr("class","cone").attr("cx",cellW*.36).attr("cy",cellH*.53).style("fill",d=>d.hot?"var(--hot)":"var(--cone)").style("fill-opacity",.85);
+spk.append("circle").attr("cx",cellW*.36).attr("cy",cellH*.53).attr("r",7).style("fill",d=>d.hot?"var(--hot2)":"var(--cone2)");
+spk.append("circle").attr("cx",22).attr("cy",22).attr("r",5).style("fill","none").style("stroke","var(--muted)");
+spk.append("text").attr("class","t").attr("x",cellW-12).attr("y",26).attr("text-anchor","end").text(d=>d.name);
+spk.append("text").attr("class","big").attr("x",cellW-12).attr("y",cellH*.53+4).attr("text-anchor","end");
+spk.append("text").attr("class","m l1").attr("x",cellW-12).attr("y",cellH*.53+22).attr("text-anchor","end");
+spk.append("text").attr("class","m l2").attr("x",cellW-12).attr("y",cellH*.53+38).attr("text-anchor","end");
+spk.append("text").attr("class","m l3").attr("x",cellW-12).attr("y",cellH-14).attr("text-anchor","end");
+
+/* flower */
+const FW=420,FH=330,fcx=FW/2,fcy=FH/2+6;
+const fs=d3.select("#flower").append("svg").attr("viewBox",`0 0 ${FW} ${FH}`);
+const rl=d3.scaleLinear([0,1],[0,175]);
+[.25,.5,.75].forEach(v=>{fs.append("circle").attr("cx",fcx).attr("cy",fcy).attr("r",rl(v)).style("fill","none").style("stroke","var(--rule)").style("stroke-dasharray","2 3");
+  fs.append("text").attr("x",fcx).attr("y",fcy+rl(v)+11).attr("text-anchor","middle").style("font-size","9px").style("fill","var(--muted)").style("font-family","var(--mono)").text(v.toFixed(2))});
+const ang=i=>(-90+i*72)*Math.PI/180;
+const petalPath=L=>{const w=Math.max(9,L*.3);return `M0,0 C${L*.25},${-w} ${L*.8},${-w*1.05} ${L},0 C${L*.8},${w*1.05} ${L*.25},${w} 0,0Z`};
+const gP=fs.append("g").attr("transform",`translate(${fcx},${fcy})`);
+const gM=fs.append("g").attr("transform",`translate(${fcx},${fcy})`);
+const gL=fs.append("g").attr("transform",`translate(${fcx},${fcy})`);
+fs.append("circle").attr("cx",fcx).attr("cy",fcy).attr("r",13).style("fill","var(--ink)");
+
+/* radar */
+const RW=380,RH=320,R=112,cx=RW/2,cy=RH/2;
+const rs=d3.select("#radar").append("svg").attr("viewBox",`0 0 ${RW} ${RH}`);
+const rang=i=>i/ATTR.length*2*Math.PI-Math.PI/2, rr=d3.scaleLinear([0,1],[0,R]);
+[.25,.5,.75,1].forEach(v=>rs.append("circle").attr("cx",cx).attr("cy",cy).attr("r",rr(v)).style("fill","none").style("stroke","var(--rule)"));
+ATTR.forEach((a,i)=>{rs.append("line").attr("x1",cx).attr("y1",cy).attr("x2",cx+Math.cos(rang(i))*R).attr("y2",cy+Math.sin(rang(i))*R).style("stroke","var(--rule)");
+  const c=Math.cos(rang(i));rs.append("text").attr("x",cx+c*(R+14)).attr("y",cy+Math.sin(rang(i))*(R+14)+3).attr("text-anchor",Math.abs(c)<.2?"middle":(c>0?"start":"end")).style("font-size","10.5px").style("fill","var(--muted)").text(LBL[a])});
+const rline=d3.lineRadial().angle((d,i)=>rang(i)+Math.PI/2).radius(d=>rr(d)).curve(d3.curveLinearClosed);
+const rg=rs.append("g").attr("transform",`translate(${cx},${cy})`);
+const pAll=rg.append("path").style("fill","var(--avg)").style("fill-opacity",.06).style("stroke","var(--avg)").style("stroke-width",2);
+const pSel=rg.append("path").style("fill-opacity",.15).style("stroke-width",2.2);
+
+function update(){
+  const per={}; Q.forEach(d=>per[d.q]=agg(r=>inLvl(r)&&r[ix.q]===d.q));
+  if(!per[sel].n){ sel=[...Q].sort((a,b)=>per[b.q].n-per[a.q].n)[0].q }
+  const all=agg(inLvl);
+  const avgp=q=>per[q].n?per[q].pop/per[q].n:0;
+  const live=Q.filter(d=>per[d.q].n), ranked=[...live].sort((a,b)=>avgp(b.q)-avgp(a.q));
+  spk.classed("on",d=>d.q===sel).classed("empty",d=>!per[d.q].n);
+  spk.select(".cone").transition().duration(300).attr("r",d=>area(avgp(d.q)));
+  spk.select(".big").text(d=>per[d.q].n?avgp(d.q).toFixed(1):"–");
+  spk.select(".l1").text(d=>per[d.q].n?"avg popularity":"no songs at this level");
+  spk.select(".l2").text(d=>per[d.q].n?`${(100*per[d.q].hit/per[d.q].n).toFixed(0)}% are hits`:"");
+  spk.select(".l3").text(d=>per[d.q].n?`${d3.format(",")(per[d.q].n)} songs · rank ${ranked.indexOf(d)+1} of ${live.length}`:"");
+  document.getElementById("spkstatus").textContent=(lvl===null?"All energy levels":`${LV[lvl]} energy only`)+` · ${d3.format(",")(all.n)} songs · average popularity ${(all.pop/all.n).toFixed(1)} · ${(100*all.hit/all.n).toFixed(0)}% hits`;
+  // flower: all songs per level; marker = selected group's dance at that level
+  const lev=LV.map((_,i)=>agg(r=>r[ix.eb]===i)), levSel=LV.map((_,i)=>agg(r=>r[ix.eb]===i&&r[ix.q]===sel));
+  gP.selectAll("path").data(lev).join("path").attr("class","petal")
+    .attr("d",s=>petalPath(rl(s.danceability/s.n))).attr("transform",(s,i)=>`rotate(${-90+i*72})`)
+    .style("fill",(s,i)=>`var(${COL[i]})`).style("fill-opacity",.85)
+    .style("stroke",(s,i)=>i===lvl?"var(--ink)":"none").style("stroke-width",2.5)
+    .style("opacity",(s,i)=>(lvl!==null&&i!==lvl)?.3:(levSel[i].n?1:.3))
+    .on("click",(e,s)=>{const i=lev.indexOf(s);lvl=lvl===i?null:i;update()});
+  const hotc=sel===2?"var(--hot)":"var(--cone)";
+  gM.selectAll("line").data(levSel).join("line").attr("transform",(s,i)=>`rotate(${-90+i*72})`)
+    .attr("x1",s=>s.n?rl(s.danceability/s.n):0).attr("x2",s=>s.n?rl(s.danceability/s.n):0).attr("y1",-14).attr("y2",14)
+    .style("stroke",hotc).style("stroke-width",3).style("display",s=>s.n?null:"none");
+  gL.selectAll("text").data(lev).join("text").attr("class","plabel").attr("text-anchor","middle")
+    .attr("x",(s,i)=>Math.cos(ang(i))*(rl(s.danceability/s.n)+22)).attr("y",(s,i)=>Math.sin(ang(i))*(rl(s.danceability/s.n)+22)+4)
+    .style("font-weight",(s,i)=>i===lvl?600:400).text((s,i)=>`${LV[i]} ${(s.danceability/s.n).toFixed(2)}`);
+  const sname=Q.find(d=>d.q===sel).name.toLowerCase();
+  document.getElementById("fstat").textContent=`Coloured tick = average danceability of ${sname} songs at each level`;
+  // radar
+  const S=per[sel];
+  pAll.datum(ATTR.map(a=>all[a]/all.n)).attr("d",rline);
+  pSel.datum(ATTR.map(a=>S.n?S[a]/S.n:0)).attr("d",rline).style("fill",hotc).style("stroke",hotc);
+  document.getElementById("radarsub").textContent=`"${Q.find(d=>d.q===sel).name}" songs (${d3.format(",")(S.n)}) against all ${d3.format(",")(all.n)} songs in view. Loudness, tempo and duration are rescaled to 0 to 1.`;
+}
+document.getElementById("reset").onclick=()=>{lvl=null;update()};
+update();
+</script>
+
+<style>
+/* Clean theme: plain white page, serif titles, sans body, thin grey outlines, black outlined pill controls */
+:root:root:root{
+  --bg:#ffffff; --panel:#ffffff; --ink:#151515; --muted:#6b6b6b; --rule:#e6e6e6;
+  --sad:#4477AA; --calm:#228833; --happy:#CCBB44; --intense:#AA3377;
+  --avg:#EE6677; --top:#2f9ec2; --sel:#151515; --hl:#d6336c; --pick:#d6336c;
+  --cab:#f5f5f3; --cone:#4477AA; --cone2:#a9c6e8; --hot:#EE7733; --hot2:#d6336c; --bar:#cfcfcf;
+  --e1:#5b2a6e; --e2:#86307f; --e3:#aa3377; --e4:#cc4f8f; --e5:#e98ab5; --ghost:#bdbdbd;
+  --v1:#4477AA; --v2:#66CCEE; --v3:#a9a9a9; --v4:#CCBB44; --v5:#EE6677;
+  --ray:#151515; --root:#8a6d45; --ring:#c8c8c8;
+  --display:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --body:"Figtree",ui-sans-serif,system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Figtree",ui-sans-serif,system-ui,Helvetica,Arial,sans-serif;
+  color-scheme:light;
+}
+html,body{background:#fff!important}
+body{color:var(--ink);font-family:var(--body);font-variant-numeric:tabular-nums}
+.wrap{max-width:1200px}
+.eyebrow{display:none!important}
+h1{font-family:var(--display)!important;font-weight:600!important;color:var(--ink)!important;letter-spacing:-.01em}
+.wrap>h1,.top h1,header h1{font-size:clamp(28px,3.6vw,40px)!important}
+.q{color:var(--muted)!important;font-size:15px}
+.panel,.story{background:#fff!important;border:1px solid var(--rule)!important;border-radius:4px!important;box-shadow:none!important}
+.panel h2,.ph h2{font-family:var(--display)!important;font-weight:600!important;font-size:18px!important}
+.tag{font-family:var(--body)!important;font-size:10.5px!important;letter-spacing:.06em!important;text-transform:uppercase;color:var(--muted)!important;margin-left:6px}
+.mode,.status,.changed,.list,#fstat{font-family:var(--body)!important;letter-spacing:0!important;text-transform:none!important}
+.changed{color:var(--hl)!important}
+.story h1{font-size:clamp(22px,2.8vw,32px)!important}
+button,select,input[type=search]{font-family:var(--body)!important;color:var(--ink)!important;background:#fff!important;border:1px solid var(--ink)!important;border-radius:999px!important;box-shadow:none!important}
+input[type=search]{border-color:#bdbdbd!important;border-radius:4px!important}
+button:hover{background:#f2f2f2!important}
+button[aria-pressed="true"],button[aria-current="step"]{background:var(--ink)!important;color:#fff!important}
+button:disabled{opacity:.35}
+.seg{border:0!important;gap:6px;overflow:visible!important;background:none!important}
+.steps .explore{color:var(--ink)!important;border-color:var(--ink)!important}
+.back{color:var(--ink)!important}
+.tip{background:#fff!important;border:1px solid var(--rule)!important;border-radius:4px!important;box-shadow:0 2px 8px rgba(0,0,0,.08)!important}
+.tip b{font-family:var(--display)!important}
+svg text,.axis text{font-family:var(--body)!important}
+.gname,.spk .big{font-family:var(--display)!important}
+.qlabel{letter-spacing:.04em}
+.selection{fill:var(--hl)!important;fill-opacity:.06!important;stroke:var(--hl)!important}
+.how{border-top:1px solid var(--rule);padding-top:12px;color:var(--muted)!important}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Figtree:wght@400;500;600&display=swap">
+
+</body>
+</html>

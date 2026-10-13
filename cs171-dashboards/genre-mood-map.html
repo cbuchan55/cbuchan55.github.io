@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{margin:0}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Genre Mood Map</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+/* Layout: scatter is the hero on the left; radar + ranked bars stack on the right; one shared selection drives all three */
+:root{
+  --bg:#f6f5f2; --panel:#ffffff; --ink:#1d1b22; --muted:#6c6876; --rule:#dedbe3;
+  --sad:#3d7fc4; --calm:#3fa66a; --happy:#e0a91b; --intense:#8a4fc2;
+  --avg:#d9534a; --top:#1f9e94; --sel:#1d1b22;
+  --display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --body:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#16151a; --panel:#1f1e25; --ink:#ecebf0; --muted:#a29fac; --rule:#34323c;
+  --sad:#6aa6e6; --calm:#5fc78a; --happy:#f0c24a; --intense:#b183e6;
+  --avg:#f07a70; --top:#3cc4b8; --sel:#ecebf0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#16151a; --panel:#1f1e25; --ink:#ecebf0; --muted:#a29fac; --rule:#34323c;
+  --sad:#6aa6e6; --calm:#5fc78a; --happy:#f0c24a; --intense:#b183e6;
+  --avg:#f07a70; --top:#3cc4b8; --sel:#ecebf0; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.45}
+.wrap{max-width:1240px;margin:0 auto;padding-inline:20px;padding-block:22px 40px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:14px}
+h1{font-family:var(--display);font-weight:700;font-size:clamp(26px,3.4vw,38px);line-height:1.05;margin:0;text-wrap:balance}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.q{max-width:62ch;color:var(--muted);margin:6px 0 0}
+.controls{display:flex;flex-wrap:wrap;gap:8px}
+button{font:500 13px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:999px;padding:6px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--intense);outline-offset:2px}
+.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:14px 14px 10px;min-width:0}
+.panel h2{font-family:var(--display);font-weight:500;font-size:17px;margin:0}
+.panel .sub{font-size:12.5px;color:var(--muted);margin:2px 0 8px}
+.tag{font-family:var(--mono);font-size:10.5px;color:var(--muted);letter-spacing:.05em}
+.right{display:flex;flex-direction:column;gap:16px;min-width:0}
+svg{display:block;width:100%;height:auto;overflow:visible}
+svg text{fill:var(--ink);font-family:var(--body)}
+.axis text{fill:var(--muted);font-family:var(--mono);font-size:10px}
+.axis path,.axis line{stroke:var(--rule)}
+.qline{stroke:var(--muted);stroke-dasharray:3 3;stroke-width:1}
+.qlabel{font-family:var(--mono);font-size:10.5px;letter-spacing:.06em;text-transform:uppercase}
+.dot{stroke:var(--panel);stroke-width:1;cursor:pointer;transition:opacity .15s}
+.dot.dim{opacity:.18}
+.dot.hot{stroke:var(--ink);stroke-width:2}
+.glabel{font-size:10.5px;pointer-events:none}
+.selection{fill:var(--intense);fill-opacity:.08;stroke:var(--intense)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-top:6px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+.legend i.line{border-radius:0;height:3px;width:16px;vertical-align:3px}
+.bars{max-height:330px;overflow-y:auto;overflow-x:hidden}
+.bar{cursor:pointer}
+.bar rect{transition:opacity .15s}
+.bar text{font-size:11px}
+.bar .v{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+.bar.hot rect{stroke:var(--ink);stroke-width:1.5}
+.meanline{stroke:var(--ink);stroke-dasharray:4 3}
+.status{font-family:var(--mono);font-size:11.5px;color:var(--muted);margin-top:4px;min-height:1.4em}
+.chips{display:flex;flex-wrap:wrap;gap:6px;min-height:24px;margin:2px 0 4px}
+.chip{font:500 12px var(--body);border:1px solid var(--rule);border-radius:999px;padding:2px 9px;background:var(--bg)}
+.tip{position:fixed;pointer-events:none;background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:6px 9px;font-size:12px;box-shadow:0 4px 14px rgba(0,0,0,.12);opacity:0;transition:opacity .1s;z-index:5}
+.tip b{font-family:var(--display)}
+.tip .m{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.how{margin-top:16px;font-size:12.5px;color:var(--muted);max-width:90ch}
+.how b{color:var(--ink)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <div class="eyebrow">CS 1710 · Prototype A · Sketches 10 + 8 + 7</div>
+    <h1>Genre Mood Map</h1>
+    <p class="q">Which genres are the happiest and calmest versus the saddest and most intense, and do those moods look like what hit songs sound like?</p>
+  </div>
+  <div class="controls">
+    <button id="bSad" type="button">Sad + intense</button>
+    <button id="bHappy" type="button">Happy + calm</button>
+    <button id="bClear" type="button">Clear selection</button>
+  </div>
+</header>
+
+<div class="grid">
+  <section class="panel">
+    <h2>Mood quadrants <span class="tag">SKETCH 10</span></h2>
+    <p class="sub">One dot per genre (1,000 tracks each). Drag to brush a region; click a dot to pin it.</p>
+    <div id="scatter"></div>
+    <div class="legend">
+      <span><i style="background:var(--intense)"></i>sad + intense</span>
+      <span><i style="background:var(--happy)"></i>happy + intense</span>
+      <span><i style="background:var(--sad)"></i>sad + calm</span>
+      <span><i style="background:var(--calm)"></i>happy + calm</span>
+    </div>
+    <div class="status" id="status"></div>
+  </section>
+  <div class="right">
+    <section class="panel">
+      <h2>Sound profile <span class="tag">SKETCH 7</span></h2>
+      <p class="sub">Average of the current selection against the whole dataset and the top 1% by popularity (popularity ≥ 80).</p>
+      <div class="chips" id="chips"></div>
+      <div id="radar"></div>
+      <div class="legend">
+        <span><i class="line" style="background:var(--avg)"></i>dataset average</span>
+        <span><i class="line" style="background:var(--top)"></i>top 1% songs</span>
+        <span><i class="line" style="background:var(--sel)"></i>your selection</span>
+      </div>
+    </section>
+    <section class="panel">
+      <h2>Valence ranking <span class="tag">SKETCH 8</span></h2>
+      <p class="sub" id="barsub">Eight happiest and eight saddest genres. Brush the scatter to rank your own set.</p>
+      <div class="bars" id="bars"></div>
+    </section>
+  </div>
+</div>
+<p class="how"><b>How the views connect.</b> Brushing the scatter filters the ranking to the genres inside the box and averages them in the radar. Hovering a bar or a dot highlights the same genre in the other two views. Clicking pins a genre so you can compare up to three genres on the radar. Radar axes are 0 to 1; loudness (−30 to 0 dB), tempo (50 to 200 BPM) and duration (1 to 7 min) are rescaled to fit.</p>
+</div>
+<div class="tip" id="tip"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+const DATA={"attrs": ["danceability", "energy", "valence", "acousticness", "instrumentalness", "speechiness", "liveness", "loud_n", "tempo_n", "dur_n"], "genres": [{"track_genre": "acoustic", "n": 1000, "pop": 42.483, "danceability": 0.5496, "energy": 0.4354, "valence": 0.424, "acousticness": 0.5668, "instrumentalness": 0.0383, "speechiness": 0.0432, "liveness": 0.1532, "loud_n": 0.6851, "tempo_n": 0.4599, "dur_n": 0.4297}, {"track_genre": "afrobeat", "n": 1000, "pop": 24.399, "danceability": 0.6696, "energy": 0.7028, "valence": 0.6986, "acousticness": 0.2709, "instrumentalness": 0.2535, "speechiness": 0.0866, "liveness": 0.1846, "loud_n": 0.7404, "tempo_n": 0.461, "dur_n": 0.5081}, {"track_genre": "alt-rock", "n": 1000, "pop": 33.943, "danceability": 0.5345, "energy": 0.7542, "valence": 0.5183, "acousticness": 0.1222, "instrumentalness": 0.0541, "speechiness": 0.0551, "liveness": 0.2102, "loud_n": 0.7936, "tempo_n": 0.4973, "dur_n": 0.4851}, {"track_genre": "alternative", "n": 1000, "pop": 24.337, "danceability": 0.5599, "energy": 0.72, "valence": 0.4956, "acousticness": 0.1478, "instrumentalness": 0.0382, "speechiness": 0.0701, "liveness": 0.2014, "loud_n": 0.7974, "tempo_n": 0.4814, "dur_n": 0.4491}, {"track_genre": "ambient", "n": 1000, "pop": 44.191, "danceability": 0.3679, "energy": 0.2372, "valence": 0.1675, "acousticness": 0.7768, "instrumentalness": 0.6762, "speechiness": 0.0416, "liveness": 0.1293, "loud_n": 0.3921, "tempo_n": 0.4083, "dur_n": 0.475}, {"track_genre": "anime", "n": 1000, "pop": 48.772, "danceability": 0.5375, "energy": 0.6741, "valence": 0.4345, "acousticness": 0.2677, "instrumentalness": 0.263, "speechiness": 0.0873, "liveness": 0.1972, "loud_n": 0.7358, "tempo_n": 0.4903, "dur_n": 0.4164}, {"track_genre": "black-metal", "n": 1000, "pop": 22.449, "danceability": 0.2964, "energy": 0.8749, "valence": 0.1917, "acousticness": 0.0271, "instrumentalness": 0.4408, "speechiness": 0.0872, "liveness": 0.2414, "loud_n": 0.7824, "tempo_n": 0.524, "dur_n": 0.6364}, {"track_genre": "bluegrass", "n": 1000, "pop": 25.676, "danceability": 0.5347, "energy": 0.5303, "valence": 0.6351, "acousticness": 0.5566, "instrumentalness": 0.1368, "speechiness": 0.0387, "liveness": 0.2277, "loud_n": 0.6692, "tempo_n": 0.5104, "dur_n": 0.437}, {"track_genre": "blues", "n": 1000, "pop": 31.188, "danceability": 0.5686, "energy": 0.5819, "valence": 0.604, "acousticness": 0.3981, "instrumentalness": 0.0341, "speechiness": 0.0639, "liveness": 0.1918, "loud_n": 0.7159, "tempo_n": 0.4434, "dur_n": 0.4482}, {"track_genre": "brazil", "n": 1000, "pop": 44.67, "danceability": 0.5629, "energy": 0.6207, "valence": 0.4698, "acousticness": 0.3324, "instrumentalness": 0.0131, "speechiness": 0.096, "liveness": 0.298, "loud_n": 0.7466, "tempo_n": 0.4795, "dur_n": 0.5668}, {"track_genre": "breakbeat", "n": 1000, "pop": 20.123, "danceability": 0.6462, "energy": 0.8533, "valence": 0.4747, "acousticness": 0.0314, "instrumentalness": 0.3959, "speechiness": 0.0857, "liveness": 0.2203, "loud_n": 0.7988, "tempo_n": 0.5534, "dur_n": 0.6403}, {"track_genre": "british", "n": 1000, "pop": 43.802, "danceability": 0.5013, "energy": 0.5071, "valence": 0.4397, "acousticness": 0.4279, "instrumentalness": 0.1937, "speechiness": 0.05, "liveness": 0.1743, "loud_n": 0.6497, "tempo_n": 0.4588, "dur_n": 0.4348}, {"track_genre": "cantopop", "n": 1000, "pop": 34.739, "danceability": 0.5479, "energy": 0.4617, "valence": 0.3936, "acousticness": 0.5363, "instrumentalness": 0.0126, "speechiness": 0.0391, "liveness": 0.1919, "loud_n": 0.6778, "tempo_n": 0.4949, "dur_n": 0.4685}, {"track_genre": "chicago-house", "n": 1000, "pop": 12.339, "danceability": 0.7662, "energy": 0.7332, "valence": 0.5865, "acousticness": 0.0353, "instrumentalness": 0.4828, "speechiness": 0.0744, "liveness": 0.1376, "loud_n": 0.695, "tempo_n": 0.4926, "dur_n": 0.7628}, {"track_genre": "children", "n": 1000, "pop": 35.047, "danceability": 0.7165, "energy": 0.4946, "valence": 0.6943, "acousticness": 0.4987, "instrumentalness": 0.0606, "speechiness": 0.0927, "liveness": 0.1814, "loud_n": 0.6865, "tempo_n": 0.4884, "dur_n": 0.2225}, {"track_genre": "chill", "n": 1000, "pop": 53.651, "danceability": 0.6643, "energy": 0.4267, "valence": 0.4038, "acousticness": 0.5341, "instrumentalness": 0.178, "speechiness": 0.1022, "liveness": 0.1682, "loud_n": 0.6513, "tempo_n": 0.4364, "dur_n": 0.3027}, {"track_genre": "classical", "n": 1000, "pop": 13.055, "danceability": 0.3819, "energy": 0.1898, "valence": 0.381, "acousticness": 0.92, "instrumentalness": 0.6192, "speechiness": 0.0508, "liveness": 0.1668, "loud_n": 0.3395, "tempo_n": 0.3864, "dur_n": 0.403}, {"track_genre": "club", "n": 1000, "pop": 33.338, "danceability": 0.6034, "energy": 0.7217, "valence": 0.3682, "acousticness": 0.1594, "instrumentalness": 0.3478, "speechiness": 0.0943, "liveness": 0.1994, "loud_n": 0.7697, "tempo_n": 0.4886, "dur_n": 0.4047}, {"track_genre": "comedy", "n": 1000, "pop": 24.628, "danceability": 0.5772, "energy": 0.6999, "valence": 0.4548, "acousticness": 0.7265, "instrumentalness": 0.0005, "speechiness": 0.7556, "liveness": 0.6617, "loud_n": 0.6514, "tempo_n": 0.3404, "dur_n": 0.4295}, {"track_genre": "country", "n": 1000, "pop": 17.028, "danceability": 0.5553, "energy": 0.5968, "valence": 0.5215, "acousticness": 0.3212, "instrumentalness": 0.0056, "speechiness": 0.0423, "liveness": 0.1772, "loud_n": 0.7573, "tempo_n": 0.493, "dur_n": 0.4051}, {"track_genre": "dance", "n": 1000, "pop": 22.69, "danceability": 0.6879, "energy": 0.7086, "valence": 0.5525, "acousticness": 0.1312, "instrumentalness": 0.0084, "speechiness": 0.0876, "liveness": 0.1682, "loud_n": 0.8212, "tempo_n": 0.4672, "dur_n": 0.3825}, {"track_genre": "dancehall", "n": 1000, "pop": 33.467, "danceability": 0.7342, "energy": 0.6853, "valence": 0.629, "acousticness": 0.2155, "instrumentalness": 0.0071, "speechiness": 0.187, "liveness": 0.1568, "loud_n": 0.796, "tempo_n": 0.419, "dur_n": 0.3764}, {"track_genre": "death-metal", "n": 1000, "pop": 32.169, "danceability": 0.3684, "energy": 0.9315, "valence": 0.2476, "acousticness": 0.0067, "instrumentalness": 0.2757, "speechiness": 0.1113, "liveness": 0.2432, "loud_n": 0.8217, "tempo_n": 0.4918, "dur_n": 0.5091}, {"track_genre": "deep-house", "n": 1000, "pop": 44.808, "danceability": 0.7104, "energy": 0.7419, "valence": 0.4473, "acousticness": 0.1015, "instrumentalness": 0.2376, "speechiness": 0.0599, "liveness": 0.1708, "loud_n": 0.7676, "tempo_n": 0.4724, "dur_n": 0.4362}, {"track_genre": "detroit-techno", "n": 1000, "pop": 11.174, "danceability": 0.7226, "energy": 0.7105, "valence": 0.4692, "acousticness": 0.0656, "instrumentalness": 0.6995, "speechiness": 0.0727, "liveness": 0.1545, "loud_n": 0.6305, "tempo_n": 0.5106, "dur_n": 0.7648}, {"track_genre": "disco", "n": 1000, "pop": 33.522, "danceability": 0.6767, "energy": 0.7376, "valence": 0.6708, "acousticness": 0.1662, "instrumentalness": 0.081, "speechiness": 0.0593, "liveness": 0.1953, "loud_n": 0.7526, "tempo_n": 0.4797, "dur_n": 0.5058}, {"track_genre": "disney", "n": 1000, "pop": 27.536, "danceability": 0.4629, "energy": 0.3025, "valence": 0.3686, "acousticness": 0.7429, "instrumentalness": 0.3836, "speechiness": 0.0749, "liveness": 0.1685, "loud_n": 0.5025, "tempo_n": 0.4134, "dur_n": 0.2698}, {"track_genre": "drum-and-bass", "n": 1000, "pop": 26.657, "danceability": 0.5355, "energy": 0.8766, "valence": 0.3215, "acousticness": 0.0259, "instrumentalness": 0.3714, "speechiness": 0.0916, "liveness": 0.2206, "loud_n": 0.8612, "tempo_n": 0.7016, "dur_n": 0.593}, {"track_genre": "dub", "n": 1000, "pop": 40.039, "danceability": 0.5753, "energy": 0.7148, "valence": 0.3867, "acousticness": 0.1224, "instrumentalness": 0.0885, "speechiness": 0.0973, "liveness": 0.1896, "loud_n": 0.7983, "tempo_n": 0.5297, "dur_n": 0.4734}, {"track_genre": "dubstep", "n": 1000, "pop": 42.317, "danceability": 0.5181, "energy": 0.759, "valence": 0.2717, "acousticness": 0.1136, "instrumentalness": 0.0931, "speechiness": 0.0904, "liveness": 0.1996, "loud_n": 0.8312, "tempo_n": 0.5575, "dur_n": 0.4603}, {"track_genre": "edm", "n": 1000, "pop": 35.032, "danceability": 0.6482, "energy": 0.7562, "valence": 0.4652, "acousticness": 0.1143, "instrumentalness": 0.0401, "speechiness": 0.0704, "liveness": 0.193, "loud_n": 0.824, "tempo_n": 0.4801, "dur_n": 0.3697}, {"track_genre": "electro", "n": 1000, "pop": 36.075, "danceability": 0.6517, "energy": 0.665, "valence": 0.4667, "acousticness": 0.2276, "instrumentalness": 0.0377, "speechiness": 0.0794, "liveness": 0.185, "loud_n": 0.7958, "tempo_n": 0.4722, "dur_n": 0.372}, {"track_genre": "electronic", "n": 1000, "pop": 44.325, "danceability": 0.6529, "energy": 0.6948, "valence": 0.3918, "acousticness": 0.177, "instrumentalness": 0.2487, "speechiness": 0.0818, "liveness": 0.1908, "loud_n": 0.7619, "tempo_n": 0.4863, "dur_n": 0.4725}, {"track_genre": "emo", "n": 1000, "pop": 48.128, "danceability": 0.5993, "energy": 0.67, "valence": 0.4411, "acousticness": 0.1951, "instrumentalness": 0.0303, "speechiness": 0.109, "liveness": 0.1837, "loud_n": 0.776, "tempo_n": 0.5132, "dur_n": 0.3588}, {"track_genre": "folk", "n": 1000, "pop": 38.006, "danceability": 0.5585, "energy": 0.5458, "valence": 0.4906, "acousticness": 0.4753, "instrumentalness": 0.0377, "speechiness": 0.0587, "liveness": 0.1761, "loud_n": 0.6989, "tempo_n": 0.4565, "dur_n": 0.5166}, {"track_genre": "forro", "n": 1000, "pop": 41.826, "danceability": 0.6498, "energy": 0.7895, "valence": 0.7607, "acousticness": 0.3976, "instrumentalness": 0.0013, "speechiness": 0.0572, "liveness": 0.295, "loud_n": 0.8293, "tempo_n": 0.6024, "dur_n": 0.3615}, {"track_genre": "french", "n": 1000, "pop": 41.067, "danceability": 0.6515, "energy": 0.595, "valence": 0.4299, "acousticness": 0.3497, "instrumentalness": 0.1588, "speechiness": 0.1266, "liveness": 0.1745, "loud_n": 0.7063, "tempo_n": 0.452, "dur_n": 0.4065}, {"track_genre": "funk", "n": 1000, "pop": 32.322, "danceability": 0.6782, "energy": 0.633, "valence": 0.5997, "acousticness": 0.2997, "instrumentalness": 0.0078, "speechiness": 0.1516, "liveness": 0.1806, "loud_n": 0.783, "tempo_n": 0.4517, "dur_n": 0.4194}, {"track_genre": "garage", "n": 1000, "pop": 40.933, "danceability": 0.4843, "energy": 0.7444, "valence": 0.518, "acousticness": 0.1675, "instrumentalness": 0.1899, "speechiness": 0.0659, "liveness": 0.2127, "loud_n": 0.7814, "tempo_n": 0.5135, "dur_n": 0.3879}, {"track_genre": "german", "n": 1000, "pop": 26.751, "danceability": 0.5243, "energy": 0.5317, "valence": 0.3791, "acousticness": 0.3818, "instrumentalness": 0.2889, "speechiness": 0.0975, "liveness": 0.1964, "loud_n": 0.6269, "tempo_n": 0.4501, "dur_n": 0.4156}, {"track_genre": "gospel", "n": 1000, "pop": 41.639, "danceability": 0.4733, "energy": 0.5763, "valence": 0.3206, "acousticness": 0.3769, "instrumentalness": 0.0033, "speechiness": 0.0413, "liveness": 0.2987, "loud_n": 0.7602, "tempo_n": 0.5041, "dur_n": 0.6675}, {"track_genre": "goth", "n": 1000, "pop": 28.913, "danceability": 0.4789, "energy": 0.741, "valence": 0.4435, "acousticness": 0.1641, "instrumentalness": 0.1194, "speechiness": 0.0731, "liveness": 0.2304, "loud_n": 0.7613, "tempo_n": 0.4951, "dur_n": 0.5249}, {"track_genre": "grindcore", "n": 1000, "pop": 14.625, "danceability": 0.2719, "energy": 0.9242, "valence": 0.2164, "acousticness": 0.0087, "instrumentalness": 0.5385, "speechiness": 0.1375, "liveness": 0.2812, "loud_n": 0.7921, "tempo_n": 0.4614, "dur_n": 0.2087}, {"track_genre": "groove", "n": 1000, "pop": 37.825, "danceability": 0.5839, "energy": 0.7636, "valence": 0.4265, "acousticness": 0.1316, "instrumentalness": 0.1455, "speechiness": 0.0707, "liveness": 0.2311, "loud_n": 0.7864, "tempo_n": 0.4916, "dur_n": 0.5223}, {"track_genre": "grunge", "n": 1000, "pop": 49.594, "danceability": 0.4571, "energy": 0.8033, "valence": 0.4004, "acousticness": 0.0534, "instrumentalness": 0.037, "speechiness": 0.0611, "liveness": 0.2221, "loud_n": 0.8113, "tempo_n": 0.5289, "dur_n": 0.4869}, {"track_genre": "guitar", "n": 1000, "pop": 29.526, "danceability": 0.54, "energy": 0.325, "valence": 0.4323, "acousticness": 0.7731, "instrumentalness": 0.5162, "speechiness": 0.0514, "liveness": 0.1497, "loud_n": 0.5319, "tempo_n": 0.4146, "dur_n": 0.3969}, {"track_genre": "happy", "n": 1000, "pop": 21.716, "danceability": 0.5528, "energy": 0.911, "valence": 0.3275, "acousticness": 0.0572, "instrumentalness": 0.2636, "speechiness": 0.1199, "liveness": 0.2841, "loud_n": 0.8194, "tempo_n": 0.686, "dur_n": 0.5038}, {"track_genre": "hard-rock", "n": 1000, "pop": 42.775, "danceability": 0.4822, "energy": 0.795, "valence": 0.5144, "acousticness": 0.0904, "instrumentalness": 0.0496, "speechiness": 0.0665, "liveness": 0.2213, "loud_n": 0.7751, "tempo_n": 0.5025, "dur_n": 0.5258}, {"track_genre": "hardcore", "n": 1000, "pop": 36.105, "danceability": 0.5464, "energy": 0.8425, "valence": 0.4963, "acousticness": 0.0649, "instrumentalness": 0.0689, "speechiness": 0.1494, "liveness": 0.2352, "loud_n": 0.8074, "tempo_n": 0.5024, "dur_n": 0.4147}, {"track_genre": "hardstyle", "n": 1000, "pop": 26.623, "danceability": 0.5392, "energy": 0.9012, "valence": 0.3119, "acousticness": 0.0511, "instrumentalness": 0.1427, "speechiness": 0.1224, "liveness": 0.2571, "loud_n": 0.8551, "tempo_n": 0.6456, "dur_n": 0.4581}, {"track_genre": "heavy-metal", "n": 1000, "pop": 26.226, "danceability": 0.4285, "energy": 0.874, "valence": 0.3882, "acousticness": 0.015, "instrumentalness": 0.0826, "speechiness": 0.0746, "liveness": 0.2796, "loud_n": 0.8081, "tempo_n": 0.5107, "dur_n": 0.5279}, {"track_genre": "hip-hop", "n": 1000, "pop": 37.759, "danceability": 0.7362, "energy": 0.6825, "valence": 0.5512, "acousticness": 0.1942, "instrumentalness": 0.0109, "speechiness": 0.1304, "liveness": 0.1926, "loud_n": 0.8006, "tempo_n": 0.445, "dur_n": 0.4062}, {"track_genre": "honky-tonk", "n": 1000, "pop": 16.355, "danceability": 0.5712, "energy": 0.367, "valence": 0.6316, "acousticness": 0.712, "instrumentalness": 0.0571, "speechiness": 0.0372, "liveness": 0.1904, "loud_n": 0.6079, "tempo_n": 0.4433, "dur_n": 0.2843}, {"track_genre": "house", "n": 1000, "pop": 34.156, "danceability": 0.6685, "energy": 0.7551, "valence": 0.4947, "acousticness": 0.1087, "instrumentalness": 0.038, "speechiness": 0.0694, "liveness": 0.188, "loud_n": 0.8245, "tempo_n": 0.4739, "dur_n": 0.3631}, {"track_genre": "idm", "n": 1000, "pop": 15.766, "danceability": 0.5278, "energy": 0.5554, "valence": 0.3025, "acousticness": 0.3777, "instrumentalness": 0.6749, "speechiness": 0.0755, "liveness": 0.1683, "loud_n": 0.5863, "tempo_n": 0.4885, "dur_n": 0.5466}, {"track_genre": "indian", "n": 1000, "pop": 49.539, "danceability": 0.5923, "energy": 0.5671, "valence": 0.463, "acousticness": 0.4849, "instrumentalness": 0.0394, "speechiness": 0.0721, "liveness": 0.1729, "loud_n": 0.705, "tempo_n": 0.441, "dur_n": 0.5023}, {"track_genre": "indie", "n": 1000, "pop": 38.895, "danceability": 0.5873, "energy": 0.5562, "valence": 0.468, "acousticness": 0.3804, "instrumentalness": 0.0528, "speechiness": 0.0627, "liveness": 0.1604, "loud_n": 0.7238, "tempo_n": 0.4604, "dur_n": 0.4131}, {"track_genre": "indie-pop", "n": 1000, "pop": 40.657, "danceability": 0.6044, "energy": 0.5611, "valence": 0.4606, "acousticness": 0.3724, "instrumentalness": 0.0419, "speechiness": 0.0659, "liveness": 0.1674, "loud_n": 0.7334, "tempo_n": 0.4676, "dur_n": 0.4038}, {"track_genre": "industrial", "n": 1000, "pop": 31.041, "danceability": 0.5304, "energy": 0.8617, "valence": 0.4249, "acousticness": 0.0367, "instrumentalness": 0.192, "speechiness": 0.0868, "liveness": 0.233, "loud_n": 0.7991, "tempo_n": 0.5122, "dur_n": 0.5349}, {"track_genre": "iranian", "n": 1000, "pop": 2.21, "danceability": 0.3007, "energy": 0.5458, "valence": 0.1535, "acousticness": 0.4109, "instrumentalness": 0.5898, "speechiness": 0.091, "liveness": 0.1921, "loud_n": 0.5653, "tempo_n": 0.433, "dur_n": 0.6382}, {"track_genre": "j-dance", "n": 1000, "pop": 26.656, "danceability": 0.6806, "energy": 0.7038, "valence": 0.5644, "acousticness": 0.2305, "instrumentalness": 0.0307, "speechiness": 0.2204, "liveness": 0.1838, "loud_n": 0.798, "tempo_n": 0.4326, "dur_n": 0.3708}, {"track_genre": "j-idol", "n": 1000, "pop": 24.707, "danceability": 0.5488, "energy": 0.8687, "valence": 0.5775, "acousticness": 0.1515, "instrumentalness": 0.0372, "speechiness": 0.0695, "liveness": 0.2293, "loud_n": 0.8743, "tempo_n": 0.574, "dur_n": 0.5433}, {"track_genre": "j-pop", "n": 1000, "pop": 41.143, "danceability": 0.5517, "energy": 0.6796, "valence": 0.5416, "acousticness": 0.2821, "instrumentalness": 0.0116, "speechiness": 0.0594, "liveness": 0.1985, "loud_n": 0.7906, "tempo_n": 0.4973, "dur_n": 0.489}, {"track_genre": "j-rock", "n": 1000, "pop": 40.664, "danceability": 0.5091, "energy": 0.7607, "valence": 0.5377, "acousticness": 0.1686, "instrumentalness": 0.0235, "speechiness": 0.0644, "liveness": 0.2236, "loud_n": 0.8101, "tempo_n": 0.5233, "dur_n": 0.5114}, {"track_genre": "jazz", "n": 1000, "pop": 13.628, "danceability": 0.51, "energy": 0.353, "valence": 0.4903, "acousticness": 0.7158, "instrumentalness": 0.0796, "speechiness": 0.055, "liveness": 0.17, "loud_n": 0.6142, "tempo_n": 0.4176, "dur_n": 0.3564}, {"track_genre": "k-pop", "n": 1000, "pop": 56.896, "danceability": 0.6477, "energy": 0.6757, "valence": 0.5569, "acousticness": 0.293, "instrumentalness": 0.0098, "speechiness": 0.088, "liveness": 0.1763, "loud_n": 0.7843, "tempo_n": 0.4616, "dur_n": 0.5054}, {"track_genre": "kids", "n": 1000, "pop": 14.888, "danceability": 0.7789, "energy": 0.6131, "valence": 0.6809, "acousticness": 0.2386, "instrumentalness": 0.0197, "speechiness": 0.1528, "liveness": 0.172, "loud_n": 0.7294, "tempo_n": 0.4784, "dur_n": 0.2688}, {"track_genre": "latin", "n": 1000, "pop": 8.297, "danceability": 0.7219, "energy": 0.7271, "valence": 0.6311, "acousticness": 0.1834, "instrumentalness": 0.0092, "speechiness": 0.0931, "liveness": 0.1743, "loud_n": 0.8245, "tempo_n": 0.4652, "dur_n": 0.4275}, {"track_genre": "latino", "n": 1000, "pop": 25.656, "danceability": 0.7571, "energy": 0.7318, "valence": 0.6302, "acousticness": 0.1722, "instrumentalness": 0.0081, "speechiness": 0.1144, "liveness": 0.1732, "loud_n": 0.8274, "tempo_n": 0.4624, "dur_n": 0.4167}, {"track_genre": "malay", "n": 1000, "pop": 30.358, "danceability": 0.6286, "energy": 0.5784, "valence": 0.5015, "acousticness": 0.4041, "instrumentalness": 0.0089, "speechiness": 0.081, "liveness": 0.1732, "loud_n": 0.7208, "tempo_n": 0.4621, "dur_n": 0.5294}, {"track_genre": "mandopop", "n": 1000, "pop": 45.025, "danceability": 0.5465, "energy": 0.4984, "valence": 0.3502, "acousticness": 0.4803, "instrumentalness": 0.0037, "speechiness": 0.0395, "liveness": 0.1593, "loud_n": 0.7274, "tempo_n": 0.4896, "dur_n": 0.5318}, {"track_genre": "metal", "n": 1000, "pop": 43.705, "danceability": 0.4643, "energy": 0.8403, "valence": 0.4179, "acousticness": 0.0371, "instrumentalness": 0.0646, "speechiness": 0.0703, "liveness": 0.2052, "loud_n": 0.8191, "tempo_n": 0.5194, "dur_n": 0.5375}, {"track_genre": "metalcore", "n": 1000, "pop": 43.477, "danceability": 0.4238, "energy": 0.9145, "valence": 0.3149, "acousticness": 0.0103, "instrumentalness": 0.0457, "speechiness": 0.1103, "liveness": 0.2582, "loud_n": 0.8514, "tempo_n": 0.5372, "dur_n": 0.4665}, {"track_genre": "minimal-techno", "n": 1000, "pop": 34.022, "danceability": 0.7294, "energy": 0.6803, "valence": 0.2836, "acousticness": 0.0709, "instrumentalness": 0.7445, "speechiness": 0.0626, "liveness": 0.1355, "loud_n": 0.6743, "tempo_n": 0.4982, "dur_n": 0.7806}, {"track_genre": "mpb", "n": 1000, "pop": 40.792, "danceability": 0.5741, "energy": 0.5798, "valence": 0.5564, "acousticness": 0.4209, "instrumentalness": 0.0155, "speechiness": 0.0566, "liveness": 0.3395, "loud_n": 0.6963, "tempo_n": 0.4675, "dur_n": 0.4683}, {"track_genre": "new-age", "n": 1000, "pop": 29.065, "danceability": 0.3485, "energy": 0.2145, "valence": 0.1832, "acousticness": 0.824, "instrumentalness": 0.713, "speechiness": 0.0457, "liveness": 0.2005, "loud_n": 0.3845, "tempo_n": 0.3863, "dur_n": 0.602}, {"track_genre": "opera", "n": 1000, "pop": 24.621, "danceability": 0.3136, "energy": 0.3171, "valence": 0.2152, "acousticness": 0.7949, "instrumentalness": 0.1629, "speechiness": 0.0464, "liveness": 0.2198, "loud_n": 0.5503, "tempo_n": 0.3712, "dur_n": 0.47}, {"track_genre": "pagode", "n": 1000, "pop": 44.298, "danceability": 0.5777, "energy": 0.7121, "valence": 0.688, "acousticness": 0.5384, "instrumentalness": 0.0006, "speechiness": 0.0628, "liveness": 0.5199, "loud_n": 0.7577, "tempo_n": 0.5124, "dur_n": 0.4613}, {"track_genre": "party", "n": 1000, "pop": 20.982, "danceability": 0.6672, "energy": 0.8712, "valence": 0.6812, "acousticness": 0.0927, "instrumentalness": 0.0017, "speechiness": 0.0873, "liveness": 0.2877, "loud_n": 0.8529, "tempo_n": 0.542, "dur_n": 0.3841}, {"track_genre": "piano", "n": 1000, "pop": 45.273, "danceability": 0.4551, "energy": 0.3201, "valence": 0.3133, "acousticness": 0.705, "instrumentalness": 0.5164, "speechiness": 0.0469, "liveness": 0.1449, "loud_n": 0.44, "tempo_n": 0.4526, "dur_n": 0.399}, {"track_genre": "pop", "n": 1000, "pop": 47.576, "danceability": 0.6304, "energy": 0.6064, "valence": 0.5062, "acousticness": 0.3437, "instrumentalness": 0.009, "speechiness": 0.08, "liveness": 0.1583, "loud_n": 0.7682, "tempo_n": 0.4728, "dur_n": 0.4455}, {"track_genre": "pop-film", "n": 1000, "pop": 59.283, "danceability": 0.5971, "energy": 0.6046, "valence": 0.5293, "acousticness": 0.4407, "instrumentalness": 0.0081, "speechiness": 0.0641, "liveness": 0.1664, "loud_n": 0.7376, "tempo_n": 0.4483, "dur_n": 0.6067}, {"track_genre": "power-pop", "n": 1000, "pop": 26.898, "danceability": 0.4734, "energy": 0.8017, "valence": 0.6146, "acousticness": 0.0855, "instrumentalness": 0.0639, "speechiness": 0.0579, "liveness": 0.2232, "loud_n": 0.7775, "tempo_n": 0.5642, "dur_n": 0.3489}, {"track_genre": "progressive-house", "n": 1000, "pop": 46.615, "danceability": 0.6239, "energy": 0.8134, "valence": 0.3653, "acousticness": 0.0614, "instrumentalness": 0.2005, "speechiness": 0.0677, "liveness": 0.2093, "loud_n": 0.8193, "tempo_n": 0.5006, "dur_n": 0.4054}, {"track_genre": "psych-rock", "n": 1000, "pop": 42.778, "danceability": 0.5026, "energy": 0.5615, "valence": 0.5647, "acousticness": 0.3152, "instrumentalness": 0.0918, "speechiness": 0.0473, "liveness": 0.2026, "loud_n": 0.6672, "tempo_n": 0.4772, "dur_n": 0.4346}, {"track_genre": "punk", "n": 1000, "pop": 38.291, "danceability": 0.4998, "energy": 0.8097, "valence": 0.5556, "acousticness": 0.0891, "instrumentalness": 0.0389, "speechiness": 0.0642, "liveness": 0.2159, "loud_n": 0.8091, "tempo_n": 0.557, "dur_n": 0.4317}, {"track_genre": "punk-rock", "n": 1000, "pop": 38.236, "danceability": 0.5073, "energy": 0.81, "valence": 0.567, "acousticness": 0.0826, "instrumentalness": 0.0322, "speechiness": 0.0635, "liveness": 0.2367, "loud_n": 0.8028, "tempo_n": 0.5478, "dur_n": 0.4331}, {"track_genre": "r-n-b", "n": 1000, "pop": 36.687, "danceability": 0.6144, "energy": 0.6381, "valence": 0.6332, "acousticness": 0.3706, "instrumentalness": 0.01, "speechiness": 0.0892, "liveness": 0.2622, "loud_n": 0.7487, "tempo_n": 0.4935, "dur_n": 0.438}, {"track_genre": "reggae", "n": 1000, "pop": 20.63, "danceability": 0.7453, "energy": 0.7258, "valence": 0.6475, "acousticness": 0.176, "instrumentalness": 0.0028, "speechiness": 0.1154, "liveness": 0.1883, "loud_n": 0.8236, "tempo_n": 0.4656, "dur_n": 0.4295}, {"track_genre": "reggaeton", "n": 1000, "pop": 23.858, "danceability": 0.7585, "energy": 0.7387, "valence": 0.6428, "acousticness": 0.1648, "instrumentalness": 0.0028, "speechiness": 0.121, "liveness": 0.1704, "loud_n": 0.8338, "tempo_n": 0.459, "dur_n": 0.4224}, {"track_genre": "rock", "n": 1000, "pop": 19.001, "danceability": 0.5436, "energy": 0.6791, "valence": 0.5389, "acousticness": 0.2092, "instrumentalness": 0.021, "speechiness": 0.0499, "liveness": 0.1725, "loud_n": 0.7779, "tempo_n": 0.5077, "dur_n": 0.442}, {"track_genre": "rock-n-roll", "n": 1000, "pop": 34.434, "danceability": 0.5503, "energy": 0.5266, "valence": 0.6705, "acousticness": 0.5533, "instrumentalness": 0.0142, "speechiness": 0.0514, "liveness": 0.2273, "loud_n": 0.6873, "tempo_n": 0.4688, "dur_n": 0.3154}, {"track_genre": "rockabilly", "n": 1000, "pop": 31.5, "danceability": 0.5612, "energy": 0.6594, "valence": 0.727, "acousticness": 0.447, "instrumentalness": 0.0252, "speechiness": 0.0596, "liveness": 0.2289, "loud_n": 0.7266, "tempo_n": 0.4905, "dur_n": 0.3123}, {"track_genre": "romance", "n": 1000, "pop": 3.245, "danceability": 0.4321, "energy": 0.2943, "valence": 0.3934, "acousticness": 0.8695, "instrumentalness": 0.0538, "speechiness": 0.0648, "liveness": 0.2108, "loud_n": 0.5598, "tempo_n": 0.3983, "dur_n": 0.3877}, {"track_genre": "sad", "n": 1000, "pop": 52.379, "danceability": 0.6924, "energy": 0.4625, "valence": 0.422, "acousticness": 0.4737, "instrumentalness": 0.1057, "speechiness": 0.1304, "liveness": 0.1716, "loud_n": 0.6575, "tempo_n": 0.4602, "dur_n": 0.2606}, {"track_genre": "salsa", "n": 1000, "pop": 28.066, "danceability": 0.6683, "energy": 0.7245, "valence": 0.8148, "acousticness": 0.4692, "instrumentalness": 0.0125, "speechiness": 0.0562, "liveness": 0.1823, "loud_n": 0.7693, "tempo_n": 0.466, "dur_n": 0.592}, {"track_genre": "samba", "n": 1000, "pop": 38.826, "danceability": 0.5749, "energy": 0.6726, "valence": 0.6934, "acousticness": 0.4899, "instrumentalness": 0.0074, "speechiness": 0.0836, "liveness": 0.4432, "loud_n": 0.717, "tempo_n": 0.4541, "dur_n": 0.4593}, {"track_genre": "sertanejo", "n": 1000, "pop": 47.866, "danceability": 0.5916, "energy": 0.7104, "valence": 0.6193, "acousticness": 0.4366, "instrumentalness": 0.0002, "speechiness": 0.0649, "liveness": 0.4742, "loud_n": 0.8172, "tempo_n": 0.5134, "dur_n": 0.4012}, {"track_genre": "show-tunes", "n": 1000, "pop": 31.246, "danceability": 0.4637, "energy": 0.3987, "valence": 0.3788, "acousticness": 0.6372, "instrumentalness": 0.0379, "speechiness": 0.1082, "liveness": 0.2156, "loud_n": 0.6442, "tempo_n": 0.4294, "dur_n": 0.3997}, {"track_genre": "singer-songwriter", "n": 1000, "pop": 37.813, "danceability": 0.562, "energy": 0.4342, "valence": 0.4143, "acousticness": 0.5528, "instrumentalness": 0.0279, "speechiness": 0.0515, "liveness": 0.1502, "loud_n": 0.674, "tempo_n": 0.4645, "dur_n": 0.4361}, {"track_genre": "ska", "n": 1000, "pop": 35.126, "danceability": 0.5807, "energy": 0.7931, "valence": 0.6967, "acousticness": 0.1216, "instrumentalness": 0.0301, "speechiness": 0.0721, "liveness": 0.2714, "loud_n": 0.7882, "tempo_n": 0.5222, "dur_n": 0.4471}, {"track_genre": "sleep", "n": 1000, "pop": 35.071, "danceability": 0.1679, "energy": 0.3421, "valence": 0.0582, "acousticness": 0.6573, "instrumentalness": 0.7235, "speechiness": 0.0568, "liveness": 0.3577, "loud_n": 0.236, "tempo_n": 0.277, "dur_n": 0.2928}, {"track_genre": "songwriter", "n": 1000, "pop": 37.813, "danceability": 0.562, "energy": 0.4342, "valence": 0.4143, "acousticness": 0.5528, "instrumentalness": 0.0279, "speechiness": 0.0515, "liveness": 0.1502, "loud_n": 0.674, "tempo_n": 0.4645, "dur_n": 0.4361}, {"track_genre": "soul", "n": 1000, "pop": 19.795, "danceability": 0.6001, "energy": 0.5339, "valence": 0.5233, "acousticness": 0.4016, "instrumentalness": 0.0136, "speechiness": 0.06, "liveness": 0.1819, "loud_n": 0.7238, "tempo_n": 0.4308, "dur_n": 0.3868}, {"track_genre": "spanish", "n": 1000, "pop": 37.922, "danceability": 0.6043, "energy": 0.7078, "valence": 0.5485, "acousticness": 0.2688, "instrumentalness": 0.0173, "speechiness": 0.0873, "liveness": 0.2237, "loud_n": 0.7838, "tempo_n": 0.4855, "dur_n": 0.472}, {"track_genre": "study", "n": 1000, "pop": 26.108, "danceability": 0.6852, "energy": 0.4107, "valence": 0.4027, "acousticness": 0.5306, "instrumentalness": 0.7898, "speechiness": 0.1, "liveness": 0.1613, "loud_n": 0.6382, "tempo_n": 0.4121, "dur_n": 0.2266}, {"track_genre": "swedish", "n": 1000, "pop": 37.175, "danceability": 0.5904, "energy": 0.622, "valence": 0.5329, "acousticness": 0.3242, "instrumentalness": 0.0222, "speechiness": 0.0648, "liveness": 0.1904, "loud_n": 0.7408, "tempo_n": 0.4737, "dur_n": 0.4131}, {"track_genre": "synth-pop", "n": 1000, "pop": 36.576, "danceability": 0.6207, "energy": 0.7131, "valence": 0.5864, "acousticness": 0.1523, "instrumentalness": 0.0823, "speechiness": 0.0483, "liveness": 0.1842, "loud_n": 0.7265, "tempo_n": 0.4856, "dur_n": 0.5106}, {"track_genre": "tango", "n": 1000, "pop": 19.871, "danceability": 0.5379, "energy": 0.3728, "valence": 0.5835, "acousticness": 0.8462, "instrumentalness": 0.1397, "speechiness": 0.0798, "liveness": 0.2303, "loud_n": 0.6646, "tempo_n": 0.4303, "dur_n": 0.3398}, {"track_genre": "techno", "n": 1000, "pop": 39.042, "danceability": 0.6843, "energy": 0.7464, "valence": 0.3219, "acousticness": 0.0814, "instrumentalness": 0.54, "speechiness": 0.0642, "liveness": 0.1594, "loud_n": 0.7307, "tempo_n": 0.5217, "dur_n": 0.6716}, {"track_genre": "trance", "n": 1000, "pop": 37.635, "danceability": 0.5834, "energy": 0.8453, "valence": 0.2769, "acousticness": 0.0359, "instrumentalness": 0.4235, "speechiness": 0.0797, "liveness": 0.2344, "loud_n": 0.789, "tempo_n": 0.5552, "dur_n": 0.5572}, {"track_genre": "trip-hop", "n": 1000, "pop": 34.46, "danceability": 0.6347, "energy": 0.6224, "valence": 0.4781, "acousticness": 0.2256, "instrumentalness": 0.3838, "speechiness": 0.0763, "liveness": 0.1903, "loud_n": 0.692, "tempo_n": 0.4581, "dur_n": 0.577}, {"track_genre": "turkish", "n": 1000, "pop": 40.698, "danceability": 0.6161, "energy": 0.6098, "valence": 0.4623, "acousticness": 0.3211, "instrumentalness": 0.0356, "speechiness": 0.1051, "liveness": 0.1808, "loud_n": 0.7258, "tempo_n": 0.469, "dur_n": 0.4428}, {"track_genre": "world-music", "n": 1000, "pop": 41.873, "danceability": 0.4146, "energy": 0.533, "valence": 0.2503, "acousticness": 0.2995, "instrumentalness": 0.0918, "speechiness": 0.0418, "liveness": 0.2504, "loud_n": 0.6889, "tempo_n": 0.477, "dur_n": 0.6276}], "all": {"danceability": 0.5668, "energy": 0.6414, "valence": 0.4741, "acousticness": 0.3149, "instrumentalness": 0.156, "speechiness": 0.0847, "liveness": 0.2136, "loud_n": 0.7255, "tempo_n": 0.4813, "dur_n": 0.4547}, "top": {"danceability": 0.6481, "energy": 0.6821, "valence": 0.5138, "acousticness": 0.1884, "instrumentalness": 0.0243, "speechiness": 0.081, "liveness": 0.1684, "loud_n": 0.7951, "tempo_n": 0.463, "dur_n": 0.4227}, "popAll": 33.24, "popTop": 83.67};
+const G=DATA.genres, ATTR=DATA.attrs;
+const LBL={danceability:"dance",energy:"energy",valence:"valence",acousticness:"acoustic",instrumentalness:"instrumental",speechiness:"speech",liveness:"live",loud_n:"loudness",tempo_n:"tempo",dur_n:"duration"};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const quad=g=>g.energy>=.5?(g.valence<.5?"--intense":"--happy"):(g.valence<.5?"--sad":"--calm");
+const meanVal=d3.mean(G,g=>g.valence);
+let brushed=null, pinned=[], hover=null;
+const tip=document.getElementById("tip");
+function showTip(e,g){tip.innerHTML=`<b>${g.track_genre}</b><div class="m">valence ${g.valence.toFixed(2)} · energy ${g.energy.toFixed(2)} · popularity ${g.pop.toFixed(1)}</div>`;tip.style.opacity=1;tip.style.left=Math.min(e.clientX+12,innerWidth-230)+"px";tip.style.top=(e.clientY+12)+"px"}
+function hideTip(){tip.style.opacity=0}
+
+/* ---------- scatter ---------- */
+const W=640,H=480,m={t:16,r:18,b:40,l:44};
+const sv=d3.select("#scatter").append("svg").attr("viewBox",`0 0 ${W} ${H}`);
+const x=d3.scaleLinear([0,1],[m.l,W-m.r]), y=d3.scaleLinear([0,1],[H-m.b,m.t]);
+sv.append("g").attr("class","axis").attr("transform",`translate(0,${H-m.b})`).call(d3.axisBottom(x).ticks(4));
+sv.append("g").attr("class","axis").attr("transform",`translate(${m.l},0)`).call(d3.axisLeft(y).ticks(4));
+sv.append("text").attr("x",W-m.r).attr("y",H-6).attr("text-anchor","end").attr("class","axis").style("font-size","11px").style("fill","var(--muted)").text("average valence (sad → happy)");
+sv.append("text").attr("transform",`translate(12,${m.t}) rotate(-90)`).attr("text-anchor","end").style("font-size","11px").style("fill","var(--muted)").text("average energy (calm → intense)");
+sv.append("line").attr("class","qline").attr("x1",x(.5)).attr("x2",x(.5)).attr("y1",y(0)).attr("y2",y(1));
+sv.append("line").attr("class","qline").attr("x1",x(0)).attr("x2",x(1)).attr("y1",y(.5)).attr("y2",y(.5));
+[["intense + sad",x(0)+6,y(1)+12,"start","--intense"],["intense + happy",x(1)-6,y(1)+12,"end","--happy"],["calm + sad",x(0)+6,y(0)-8,"start","--sad"],["calm + happy",x(1)-6,y(0)-8,"end","--calm"]]
+ .forEach(([t,a,b,an,c])=>sv.append("text").attr("class","qlabel").attr("x",a).attr("y",b).attr("text-anchor",an).style("fill",`var(${c})`).text(t));
+const gb=sv.append("g");
+const brush=d3.brush().extent([[m.l,m.t],[W-m.r,H-m.b]]).on("brush end",ev=>{
+  if(!ev.selection){brushed=null;update();return}
+  const [[x0,y0],[x1,y1]]=ev.selection;
+  brushed=G.filter(g=>x(g.valence)>=x0&&x(g.valence)<=x1&&y(g.energy)>=y0&&y(g.energy)<=y1);
+  update();
+});
+gb.call(brush);
+const dots=sv.append("g").selectAll("circle").data(G).join("circle").attr("class","dot")
+  .attr("cx",g=>x(g.valence)).attr("cy",g=>y(g.energy)).attr("r",g=>3+ (g.pop/70)*5)
+  .style("fill",g=>`var(${quad(g)})`)
+  .on("mouseenter",(e,g)=>{hover=g;showTip(e,g);update()}).on("mousemove",(e,g)=>showTip(e,g))
+  .on("mouseleave",()=>{hover=null;hideTip();update()})
+  .on("click",(e,g)=>togglePin(g));
+const labels=sv.append("g");
+
+/* ---------- radar ---------- */
+const RW=380,RH=330,R=118,cx=RW/2,cy=RH/2+2;
+const rs=d3.select("#radar").append("svg").attr("viewBox",`0 0 ${RW} ${RH}`);
+const ang=i=>i/ATTR.length*2*Math.PI-Math.PI/2;
+const rr=d3.scaleLinear([0,1],[0,R]);
+[.25,.5,.75,1].forEach(v=>rs.append("circle").attr("cx",cx).attr("cy",cy).attr("r",rr(v)).style("fill","none").style("stroke","var(--rule)"));
+ATTR.forEach((a,i)=>{const p=[cx+Math.cos(ang(i))*R,cy+Math.sin(ang(i))*R];
+  rs.append("line").attr("x1",cx).attr("y1",cy).attr("x2",p[0]).attr("y2",p[1]).style("stroke","var(--rule)");
+  const lx=cx+Math.cos(ang(i))*(R+14), ly=cy+Math.sin(ang(i))*(R+14);
+  rs.append("text").attr("x",lx).attr("y",ly+3).attr("text-anchor",Math.abs(Math.cos(ang(i)))<.2?"middle":(Math.cos(ang(i))>0?"start":"end")).style("font-size","10.5px").style("fill","var(--muted)").text(LBL[a]);});
+rs.append("text").attr("x",cx+3).attr("y",cy-rr(1)+10).style("font-size","9px").style("fill","var(--muted)").style("font-family","var(--mono)").text("1.0");
+const line=d3.lineRadial().angle((d,i)=>ang(i)+Math.PI/2).radius(d=>rr(d)).curve(d3.curveLinearClosed);
+const rg=rs.append("g").attr("transform",`translate(${cx},${cy})`);
+function poly(vals,cls,color,fillOp,dash){
+  let p=rg.selectAll("path."+cls).data([vals]);
+  p.join("path").attr("class",cls).attr("d",line).style("fill",color).style("fill-opacity",fillOp).style("stroke",color).style("stroke-width",2).style("stroke-dasharray",dash||null);
+}
+const avgOf=arr=>ATTR.map(a=>d3.mean(arr,g=>g[a]));
+
+/* ---------- bars ---------- */
+const bars=d3.select("#bars");
+function drawBars(list){
+  const bh=18,bw=380,ml=92,mr=40;
+  const h=list.length*bh+26;
+  bars.selectAll("svg").remove();
+  const s=bars.append("svg").attr("viewBox",`0 0 ${bw} ${h}`);
+  const bx=d3.scaleLinear([0,1],[ml,bw-mr]);
+  s.append("g").attr("class","axis").attr("transform",`translate(0,${h-20})`).call(d3.axisBottom(bx).ticks(5).tickSize(3));
+  const rows=s.selectAll("g.bar").data(list,g=>g.track_genre).join("g").attr("class","bar").attr("transform",(g,i)=>`translate(0,${i*bh+2})`)
+    .on("mouseenter",(e,g)=>{hover=g;showTip(e,g);update(false)}).on("mousemove",(e,g)=>showTip(e,g)).on("mouseleave",()=>{hover=null;hideTip();update(false)}).on("click",(e,g)=>togglePin(g));
+  rows.append("text").attr("x",ml-6).attr("y",bh/2+2).attr("text-anchor","end").text(g=>g.track_genre);
+  rows.append("rect").attr("x",bx(0)).attr("y",2).attr("height",bh-5).attr("width",g=>bx(g.valence)-bx(0)).attr("rx",2).style("fill",g=>`var(${quad(g)})`);
+  rows.append("text").attr("class","v").attr("x",g=>bx(g.valence)+4).attr("y",bh/2+2).text(g=>g.valence.toFixed(2));
+  s.append("line").attr("class","meanline").attr("x1",bx(meanVal)).attr("x2",bx(meanVal)).attr("y1",0).attr("y2",h-20);
+  s.append("text").attr("x",bx(meanVal)+3).attr("y",h-24).style("font-size","9.5px").style("fill","var(--muted)").text("mean");
+}
+
+function togglePin(g){const i=pinned.indexOf(g);if(i>=0)pinned.splice(i,1);else{pinned.push(g);if(pinned.length>3)pinned.shift()}update()}
+let lastList="";
+function update(redrawBars=true){
+  const set=brushed&&brushed.length?brushed:null;
+  const focus=new Set([...(set||[]),...pinned,...(hover?[hover]:[])]);
+  dots.classed("dim",g=>(set||pinned.length||hover)&&!focus.has(g)).classed("hot",g=>g===hover||pinned.includes(g));
+  const lab=[...pinned,...(hover&&!pinned.includes(hover)?[hover]:[])];
+  if(set&&set.length<=12) set.forEach(g=>{if(!lab.includes(g))lab.push(g)});
+  labels.selectAll("text").data(lab,g=>g.track_genre).join("text").attr("class","glabel").attr("x",g=>x(g.valence)+8).attr("y",g=>y(g.energy)+3).text(g=>g.track_genre);
+  // radar
+  poly(ATTR.map(a=>DATA.all[a]),"pa","var(--avg)",.06);
+  poly(ATTR.map(a=>DATA.top[a]),"pt","var(--top)",.1);
+  const src=hover?[hover]:(pinned.length?pinned:set);
+  rg.selectAll("path.ps").remove();rg.selectAll("path.pp").remove();
+  if(pinned.length && !hover){pinned.forEach((g,i)=>{rg.append("path").attr("class","pp").datum(ATTR.map(a=>g[a])).attr("d",line).style("fill","none").style("stroke","var(--sel)").style("stroke-width",1.8).style("stroke-dasharray",["", "5 3","1.5 3"][i])})}
+  else if(src){poly(avgOf(src),"ps","var(--sel)",.08)}
+  d3.select("#chips").html(pinned.length?pinned.map((g,i)=>`<span class="chip">${["—","– –","···"][i]} ${g.track_genre}</span>`).join(""):(set?`<span class="chip">average of ${set.length} brushed genres</span>`:(hover?"":`<span class="chip" style="color:var(--muted)">no selection yet</span>`)));
+  // bars
+  let list, sub;
+  if(set){list=[...set].sort((a,b)=>b.valence-a.valence);sub=`${set.length} brushed genres, ranked by average valence.`}
+  else{const s=[...G].sort((a,b)=>b.valence-a.valence);list=[...s.slice(0,8),...s.slice(-8)];sub="Eight happiest and eight saddest genres. Brush the scatter to rank your own set."}
+  const key=list.map(g=>g.track_genre).join();
+  if(redrawBars&&key!==lastList){drawBars(list);lastList=key;document.getElementById("barsub").textContent=sub}
+  bars.selectAll("g.bar").classed("hot",g=>g===hover||pinned.includes(g)).select("rect").style("opacity",g=>(hover||pinned.length)&&!(g===hover||pinned.includes(g))?.35:1);
+  const st=set?`${set.length} genres · mean popularity ${d3.mean(set,g=>g.pop).toFixed(1)} (dataset ${DATA.popAll.toFixed(1)})`:"";
+  document.getElementById("status").textContent=st;
+}
+function setBrush(v0,v1,e0,e1){gb.call(brush.move,[[x(v0),y(e1)],[x(v1),y(e0)]])}
+document.getElementById("bSad").onclick=()=>setBrush(0,.5,.5,1);
+document.getElementById("bHappy").onclick=()=>setBrush(.5,1,0,.5);
+document.getElementById("bClear").onclick=()=>{pinned=[];gb.call(brush.move,null);update()};
+update();
+setBrush(0,.5,.5,1);
+</script>
+
+<style>
+/* Clean theme: plain white page, serif titles, sans body, thin grey outlines, black outlined pill controls */
+:root:root:root{
+  --bg:#ffffff; --panel:#ffffff; --ink:#151515; --muted:#6b6b6b; --rule:#e6e6e6;
+  --sad:#4477AA; --calm:#228833; --happy:#CCBB44; --intense:#AA3377;
+  --avg:#EE6677; --top:#2f9ec2; --sel:#151515; --hl:#d6336c; --pick:#d6336c;
+  --cab:#f5f5f3; --cone:#4477AA; --cone2:#a9c6e8; --hot:#EE7733; --hot2:#d6336c; --bar:#cfcfcf;
+  --e1:#5b2a6e; --e2:#86307f; --e3:#aa3377; --e4:#cc4f8f; --e5:#e98ab5; --ghost:#bdbdbd;
+  --v1:#4477AA; --v2:#66CCEE; --v3:#a9a9a9; --v4:#CCBB44; --v5:#EE6677;
+  --ray:#151515; --root:#8a6d45; --ring:#c8c8c8;
+  --display:"Source Serif 4",Georgia,"Times New Roman",serif;
+  --body:"Figtree",ui-sans-serif,system-ui,-apple-system,Helvetica,Arial,sans-serif;
+  --mono:"Figtree",ui-sans-serif,system-ui,Helvetica,Arial,sans-serif;
+  color-scheme:light;
+}
+html,body{background:#fff!important}
+body{color:var(--ink);font-family:var(--body);font-variant-numeric:tabular-nums}
+.wrap{max-width:1200px}
+.eyebrow{display:none!important}
+h1{font-family:var(--display)!important;font-weight:600!important;color:var(--ink)!important;letter-spacing:-.01em}
+.wrap>h1,.top h1,header h1{font-size:clamp(28px,3.6vw,40px)!important}
+.q{color:var(--muted)!important;font-size:15px}
+.panel,.story{background:#fff!important;border:1px solid var(--rule)!important;border-radius:4px!important;box-shadow:none!important}
+.panel h2,.ph h2{font-family:var(--display)!important;font-weight:600!important;font-size:18px!important}
+.tag{font-family:var(--body)!important;font-size:10.5px!important;letter-spacing:.06em!important;text-transform:uppercase;color:var(--muted)!important;margin-left:6px}
+.mode,.status,.changed,.list,#fstat{font-family:var(--body)!important;letter-spacing:0!important;text-transform:none!important}
+.changed{color:var(--hl)!important}
+.story h1{font-size:clamp(22px,2.8vw,32px)!important}
+button,select,input[type=search]{font-family:var(--body)!important;color:var(--ink)!important;background:#fff!important;border:1px solid var(--ink)!important;border-radius:999px!important;box-shadow:none!important}
+input[type=search]{border-color:#bdbdbd!important;border-radius:4px!important}
+button:hover{background:#f2f2f2!important}
+button[aria-pressed="true"],button[aria-current="step"]{background:var(--ink)!important;color:#fff!important}
+button:disabled{opacity:.35}
+.seg{border:0!important;gap:6px;overflow:visible!important;background:none!important}
+.steps .explore{color:var(--ink)!important;border-color:var(--ink)!important}
+.back{color:var(--ink)!important}
+.tip{background:#fff!important;border:1px solid var(--rule)!important;border-radius:4px!important;box-shadow:0 2px 8px rgba(0,0,0,.08)!important}
+.tip b{font-family:var(--display)!important}
+svg text,.axis text{font-family:var(--body)!important}
+.gname,.spk .big{font-family:var(--display)!important}
+.qlabel{letter-spacing:.04em}
+.selection{fill:var(--hl)!important;fill-opacity:.06!important;stroke:var(--hl)!important}
+.how{border-top:1px solid var(--rule);padding-top:12px;color:var(--muted)!important}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&family=Figtree:wght@400;500;600&display=swap">
+
+</body>
+</html>
